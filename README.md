@@ -31,3 +31,9 @@ and type following Command:
 ```bash
   Create Rebar Plugin
 ```
+
+or to create a plugin with all possible folders and files:
+
+```bash
+  Create Advanced Rebar Plugin
+```

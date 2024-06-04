@@ -23,6 +23,18 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(disposable);
+
+  let advancedDisposable = vscode.commands.registerCommand("rebar-plugin-generator.createAdvancedRebarPlugin", () => {
+    vscode.window.showInputBox({ prompt: "Enter the Plugin name:" }).then((folderName) => {
+      if (folderName) {
+        createAdvancedFolderStructure(folderName);
+      } else {
+        vscode.window.showErrorMessage("Please enter a Plugin name.");
+      }
+    });
+  });
+
+  context.subscriptions.push(advancedDisposable);
 }
 
 function createFolderStructure(folderName: string, hasWebviewFolder: boolean) {
@@ -39,9 +51,6 @@ function createFolderStructure(folderName: string, hasWebviewFolder: boolean) {
     const sharedFolderPath = path.join(pluginsFolderPath, folderName, "shared");
     const webviewFolderPath = path.join(pluginsFolderPath, folderName, "webview");
 
-    const clientSrcPath = path.join(clientFolderPath, "src");
-    const serverSrcPath = path.join(serverFolderPath, "src");
-
     try {
       fs.mkdirSync(path.join(pluginsFolderPath, folderName));
       fs.mkdirSync(clientFolderPath);
@@ -54,14 +63,59 @@ function createFolderStructure(folderName: string, hasWebviewFolder: boolean) {
         fs.writeFileSync(path.join(webviewFolderPath, "App.vue"), "");
       }
 
-      fs.mkdirSync(clientSrcPath);
-      fs.mkdirSync(serverSrcPath);
-
       fs.writeFileSync(path.join(clientFolderPath, "index.ts"), "");
-      fs.writeFileSync(path.join(`${clientFolderPath}/src`, ".gitkeep"), "");
 
       fs.writeFileSync(path.join(serverFolderPath, "index.ts"), generateServerIndexContent(folderName));
-      fs.writeFileSync(path.join(`${serverFolderPath}/src`, ".gitkeep"), "");
+
+      vscode.window.showInformationMessage(`Plugin ${folderName} created successfully.`);
+    } catch (error: any) {
+      if (error.code === "ENOENT") {
+        vscode.window.showErrorMessage(`Couldn't create the Plugins folder. Are you sure you are using Rebar?`);
+      } else {
+        vscode.window.showErrorMessage("Error creating folder structure.");
+      }
+    }
+  } else {
+    vscode.window.showErrorMessage("No workspace is opened.");
+  }
+}
+
+function createAdvancedFolderStructure(folderName: string) {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+
+  if (workspaceFolders && workspaceFolders.length > 0) {
+    const activeWorkspace = workspaceFolders[0];
+
+    const workspacePath = activeWorkspace.uri.fsPath;
+
+    const pluginsFolderPath = path.join(workspacePath, "src", "plugins");
+    const pluginFolderPath = path.join(pluginsFolderPath, folderName);
+
+    const dependenciesPath = path.join(pluginFolderPath, "dependencies.json");
+    const clientPath = path.join(pluginFolderPath, "client");
+    const imagesPath = path.join(pluginFolderPath, "images");
+    const serverPath = path.join(pluginFolderPath, "server");
+    const soundsPath = path.join(pluginFolderPath, "sounds");
+    const translatePath = path.join(pluginFolderPath, "translate");
+    const webviewPath = path.join(pluginFolderPath, "webview");
+
+    try {
+      fs.mkdirSync(pluginFolderPath);
+      fs.mkdirSync(clientPath);
+      fs.mkdirSync(imagesPath);
+      fs.mkdirSync(serverPath);
+      fs.mkdirSync(soundsPath);
+      fs.mkdirSync(translatePath);
+      fs.mkdirSync(webviewPath);
+
+      fs.writeFileSync(dependenciesPath, "{}");
+      fs.writeFileSync(path.join(clientPath, "index.ts"), "");
+      fs.writeFileSync(path.join(imagesPath, ".gitkeep"), "");
+      fs.writeFileSync(path.join(serverPath, "index.ts"), generateServerIndexContent(folderName));
+      fs.writeFileSync(path.join(soundsPath, ".gitkeep"), "");
+      fs.writeFileSync(path.join(soundsPath, ".gitkeep"), "");
+      fs.writeFileSync(path.join(translatePath, "index.ts"), "");
+      fs.writeFileSync(path.join(webviewPath, "App.vue"), "");
 
       vscode.window.showInformationMessage(`Plugin ${folderName} created successfully.`);
     } catch (error: any) {
@@ -77,8 +131,7 @@ function createFolderStructure(folderName: string, hasWebviewFolder: boolean) {
 }
 
 function generateServerIndexContent(folderName: string): string {
-  return `
-import * as alt from 'alt-server';
+  return `import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
 
 const Rebar = useRebar();
