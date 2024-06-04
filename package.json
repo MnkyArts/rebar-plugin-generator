@@ -3,7 +3,7 @@
   "displayName": "Rebar Plugin Generator",
   "description": "Effortlessly generate the required folder structure for a plugin designed for the Rebar Framework by Stuyk.",
   "icon": "icon.png",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Liam R. | MnkyArts",
   "publisher": "PlanetReallife",
   "engines": {
