@@ -1,0 +1,86 @@
+import * as fs from "fs";
+import * as path from "path";
+import * as vscode from "vscode";
+
+export function activate(context: vscode.ExtensionContext) {
+  console.log('Rebar Plugin Generator is now active. Use the command "Rebar Plugin Generator: Create Plugin" to create a new plugin.');
+
+  let disposable = vscode.commands.registerCommand("rebar-plugin-generator.createRebarPlugin", () => {
+    vscode.window.showInputBox({ prompt: "Enter the Plugin name:" }).then((folderName) => {
+      if (folderName) {
+        vscode.window
+          .showQuickPick(["Yes", "No"], {
+            placeHolder: "Do you want a webview folder?",
+          })
+          .then((option) => {
+            const hasWebviewFolder = option === "Yes";
+            createFolderStructure(folderName, hasWebviewFolder);
+          });
+      } else {
+        vscode.window.showErrorMessage("Please enter a Plugin name.");
+      }
+    });
+  });
+
+  context.subscriptions.push(disposable);
+}
+
+function createFolderStructure(folderName: string, hasWebviewFolder: boolean) {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+
+  if (workspaceFolders && workspaceFolders.length > 0) {
+    const activeWorkspace = workspaceFolders[0];
+
+    const workspacePath = activeWorkspace.uri.fsPath;
+
+    const pluginsFolderPath = path.join(workspacePath, "src", "plugins");
+    const clientFolderPath = path.join(pluginsFolderPath, folderName, "client");
+    const serverFolderPath = path.join(pluginsFolderPath, folderName, "server");
+    const sharedFolderPath = path.join(pluginsFolderPath, folderName, "shared");
+    const webviewFolderPath = path.join(pluginsFolderPath, folderName, "webview");
+
+    const clientSrcPath = path.join(clientFolderPath, "src");
+    const serverSrcPath = path.join(serverFolderPath, "src");
+
+    try {
+      fs.mkdirSync(path.join(pluginsFolderPath, folderName));
+      fs.mkdirSync(clientFolderPath);
+      fs.mkdirSync(serverFolderPath);
+      fs.mkdirSync(sharedFolderPath);
+      fs.writeFileSync(path.join(sharedFolderPath, ".gitkeep"), "");
+
+      if (hasWebviewFolder) {
+        fs.mkdirSync(webviewFolderPath);
+        fs.writeFileSync(path.join(webviewFolderPath, "App.vue"), "");
+      }
+
+      fs.mkdirSync(clientSrcPath);
+      fs.mkdirSync(serverSrcPath);
+
+      fs.writeFileSync(path.join(clientFolderPath, "index.ts"), "");
+      fs.writeFileSync(path.join(`${clientFolderPath}/src`, ".gitkeep"), "");
+
+      fs.writeFileSync(path.join(serverFolderPath, "index.ts"), generateServerIndexContent(folderName));
+      fs.writeFileSync(path.join(`${serverFolderPath}/src`, ".gitkeep"), "");
+
+      vscode.window.showInformationMessage(`Plugin ${folderName} created successfully.`);
+    } catch (error: any) {
+      if (error.code === "ENOENT") {
+        vscode.window.showErrorMessage(`Couldn't create the Plugins folder. Are you sure you are using Rebar?`);
+      } else {
+        vscode.window.showErrorMessage("Error creating folder structure.");
+      }
+    }
+  } else {
+    vscode.window.showErrorMessage("No workspace is opened.");
+  }
+}
+
+function generateServerIndexContent(folderName: string): string {
+  return `
+import * as alt from 'alt-server';
+import { useRebar } from '@Server/index.js';
+
+const Rebar = useRebar();
+const api = Rebar.useApi();`;
+}
